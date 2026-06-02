@@ -38,6 +38,11 @@ yarn-error.*
 
 example
 
+# local planning docs
+Design.md
+Plan.md
+Theme.md
+
 # generated native folders
 /ios
 /android
