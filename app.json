@@ -34,6 +34,13 @@
             "imageWidth": 76
           }
         }
+      ],
+      "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "SafeDrive uses your location to measure speed and distance during a drive."
+        }
       ]
     ],
     "experiments": {
