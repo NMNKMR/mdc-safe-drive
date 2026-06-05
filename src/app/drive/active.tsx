@@ -9,6 +9,7 @@ import ScoreRing from "@/components/ScoreRing";
 import Logo from "@/components/shared/Logo";
 import StatCard from "@/components/StatCard";
 import {
+  formatDistance,
   RECENT_INCIDENTS,
   scoreTier,
   tierColor,
@@ -162,7 +163,7 @@ export default function ActiveDrive() {
             colors={colors}
             icon="location-outline"
             label="DISTANCE"
-            value={`${distanceKm.toFixed(1)} km`}
+            value={formatDistance(distanceKm)}
           />
           <StatCard
             centered

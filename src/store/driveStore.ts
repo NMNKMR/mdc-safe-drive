@@ -78,30 +78,43 @@ async function startLocation(set: (partial: Partial<DriveState>) => void) {
     {
       accuracy: Location.Accuracy.High,
       timeInterval: 1000,
-      distanceInterval: 5, // metres
+      // 0 = deliver fixes on the time cadence, not gated by a movement distance
+      // (gating on distance suppressed updates indoors / at low speed).
+      distanceInterval: 0,
     },
     (loc) => {
-      const { latitude, longitude, speed } = loc.coords;
+      const { latitude, longitude, speed, accuracy } = loc.coords;
       const t = loc.timestamp;
 
-      let addKm = 0;
-      let derivedKmh = 0;
-      if (lastCoord) {
-        addKm = haversineKm(lastCoord.lat, lastCoord.lon, latitude, longitude);
-        const dtH = (t - lastCoord.t) / 3_600_000;
-        if (dtH > 0) derivedKmh = addKm / dtH;
+      if (!lastCoord) {
+        lastCoord = { lat: latitude, lon: longitude, t };
+      } else {
+        const legKm = haversineKm(
+          lastCoord.lat,
+          lastCoord.lon,
+          latitude,
+          longitude,
+        );
+        // Only count travel larger than the GPS uncertainty so jitter while
+        // stationary isn't accumulated as fake distance. The anchor (lastCoord)
+        // is NOT advanced until a leg qualifies, so slow movement still adds up.
+        const minLegKm = Math.max(accuracy ?? 999, 5) / 1000;
+        if (legKm > minLegKm) {
+          const dtH = (t - lastCoord.t) / 3_600_000;
+          const derivedKmh = dtH > 0 ? legKm / dtH : 0;
+          lastCoord = { lat: latitude, lon: longitude, t };
+          const speedKmh =
+            speed != null && speed >= 0 ? speed * 3.6 : derivedKmh;
+          set({
+            speedKmh: Math.max(0, speedKmh),
+            distanceKm: useDriveStore.getState().distanceKm + legKm,
+          });
+          return;
+        }
       }
-      lastCoord = { lat: latitude, lon: longitude, t };
 
-      // prefer the GPS-reported speed; fall back to distance/time
-      const speedKmh =
-        speed != null && speed >= 0 ? speed * 3.6 : derivedKmh;
-
-      set({
-        speedKmh: Math.max(0, speedKmh),
-        // ignore sub-metre GPS jitter so the odometer doesn't creep at rest
-        distanceKm: useDriveStore.getState().distanceKm + (addKm > 0.001 ? addKm : 0),
-      });
+      // No qualifying movement — still reflect live GPS speed if reported.
+      if (speed != null && speed >= 0) set({ speedKmh: speed * 3.6 });
     },
   );
 }

@@ -14,6 +14,7 @@ import StatCard from "@/components/StatCard";
 import {
   driveLabel,
   formatClock,
+  formatDistance,
   scoreTier,
   SUMMARY_AI_FEEDBACK,
   summaryRibbon,
@@ -189,7 +190,7 @@ export default function DriveSummaryView({
               colors={colors}
               icon="git-network-outline"
               label="DISTANCE"
-              value={`${distanceKm.toFixed(1)} km`}
+              value={formatDistance(distanceKm)}
             />
           </View>
 

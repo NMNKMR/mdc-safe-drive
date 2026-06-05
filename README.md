@@ -1,56 +1,206 @@
-# Welcome to your Expo app 👋
+# SafeDrive Pulse 🚗
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mobile app that uses a phone's motion sensors to analyze driving behavior in
+real time and produce a **driving safety score**. It detects events like harsh
+braking, sharp turns, and phone handling during a drive, then summarizes each
+trip and tracks your safety trend over time — the same ideas behind insurance
+telematics and fleet driver-safety systems.
 
-## Get started
+---
 
-1. Install dependencies
+## Project Overview
 
-   ```bash
-   npm install
-   ```
+- **Start / End a drive** — a session records sensor data only while active.
+- **Real-time event detection** — six driving events are detected live from the
+  accelerometer, gyroscope, and device-motion streams.
+- **Live driving score** — starts at 100 and drops as risky events occur.
+- **Drive summary** — final score, safety rating, duration, distance, total
+  events, and a per-type breakdown (with an event timeline).
+- **History + Insights** — every drive is saved locally (SQLite); the Insights
+  screen charts your score trend, best drive, total drives, and streak.
+- **Speed & distance** — derived live from GPS (coordinates are never stored).
 
-2. Start the app
+> AI coaching text on the dashboard/insights/summary is currently **placeholder**
+> (no model wired up) — see [Assumptions](#assumptions-made).
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## Tech Stack
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+| Area | Choice |
+|---|---|
+| Framework | **Expo (managed)** SDK 55, React Native 0.83, React 19 |
+| Language | TypeScript (strict) |
+| Navigation | Expo Router (file-based, typed routes) |
+| State | Zustand (+ `persist` via AsyncStorage for preferences) |
+| Persistence | `expo-sqlite` (drives + events) |
+| Sensors | `expo-sensors` (accelerometer, gyroscope, device motion, magnetometer) |
+| Location | `expo-location` (live speed + distance only) |
+| Charts | `react-native-svg` (custom score-trend chart) |
+| Misc | `expo-keep-awake` (screen stays on during a drive), `react-native-reanimated` |
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Runs in **Expo Go** — no native/dev build required.
 
-## Get a fresh project
+---
 
-When you're ready, run:
+## Sensors Used
+
+| Sensor | Rate | Used for |
+|---|---|---|
+| **Accelerometer** | ~50 Hz | Total acceleration magnitude / jerk (excessive movement) |
+| **Gyroscope** | ~50 Hz | Yaw rate → sharp turns & aggressive steering |
+| **Device Motion** | ~20 Hz | Gravity-free linear acceleration (braking/accel), gravity vector (orientation), `accelerationIncludingGravity` (gravity estimate) |
+| **Magnetometer** | — | Optional; availability checked only (heading not required) |
+| **GPS** (`expo-location`) | ~1 Hz | Live speed and trip distance |
+
+All raw readings are normalized into one unit system (m/s², rad/s, degrees) and
+smoothed before any detection runs.
+
+---
+
+## Event Detection Strategy
+
+1. **SensorManager** subscribes to all sensors only between Start and End, then
+   builds one normalized **frame** per accelerometer tick (~50 Hz), each holding:
+   forward/lateral/vertical acceleration, yaw rate, acceleration magnitude,
+   jerk, and the gravity direction.
+   - **Exponential moving average (EMA)** smoothing suppresses road-bump / sensor
+     noise so single spikes don't trigger false events.
+   - **Mount-independence via gravity:** yaw rate is the gyroscope **projected
+     onto the gravity vector** (true rotation about vertical, regardless of how
+     the phone is held), and "excessive movement" uses **gravity-free** linear
+     acceleration (no constant 9.8 m/s² baseline).
+   - Frames are kept in a rolling **ring buffer** (`WINDOW_MS = 2000 ms`).
+2. **DetectionEngine** evaluates the buffer on a 10 Hz tick:
+   - **Sustained-window checks** — an event must hold for a minimum duration
+     (not a single sample) to count.
+   - **Per-event cooldowns** — one physical maneuver isn't counted repeatedly.
+3. All tunable numbers live in one file: [`src/constants/thresholds.ts`](src/constants/thresholds.ts).
+
+---
+
+## Threshold Values Chosen
+
+Starting heuristics (tuned to reduce false positives during handheld testing;
+expect refinement against real in-car data):
+
+| Event | Trigger | Sustained | Cooldown |
+|---|---|---|---|
+| **Harsh Braking** | forward accel ≤ **−3.0 m/s²** | 300 ms | 2000 ms |
+| **Harsh Acceleration** | forward accel ≥ **+3.0 m/s²** | 300 ms | 2000 ms |
+| **Sharp Turn** | yaw rate ≥ **1.2 rad/s** (about true vertical) | 350 ms | 2500 ms |
+| **Aggressive Steering** | yaw swing (sign flip) ≥ **2.5 rad/s** within 500 ms | — | 2000 ms |
+| **Excessive Device Movement** | linear accel ≥ **18 m/s²** or jerk ≥ **60 m/s³** | — | 3000 ms |
+| **Phone Handling** | gravity tilt ≥ **60°** over 1500 ms | — | 5000 ms |
+
+Signal-processing constants: sampling 50 Hz (accel/gyro) / 20 Hz (device motion),
+`SMOOTHING_ALPHA = 0.2`, gravity-estimate alpha `0.08`, buffer `2000 ms`.
+
+---
+
+## Driving Score Calculation Logic
+
+- Every drive **starts at 100**.
+- Each detected event **deducts** points:
+
+  | Event | Deduction |
+  |---|---|
+  | Harsh Braking | −5 |
+  | Harsh Acceleration | −5 |
+  | Sharp Turn | −3 |
+  | Aggressive Steering | −4 |
+  | Excessive Device Movement | −5 |
+  | Phone Handling | −10 |
+
+- Score is **floored at 0**: `score = max(0, 100 − Σ deductions)`.
+- The numeric score maps to a **safety rating**:
+
+  | Score | Rating |
+  |---|---|
+  | 90–100 | Excellent |
+  | 75–89 | Good |
+  | 60–74 | Fair |
+  | 40–59 | Risky |
+  | 0–39 | Dangerous |
+
+Scoring is implemented as pure functions in
+[`src/scoring/score.ts`](src/scoring/score.ts).
+
+---
+
+## How to Run Locally
+
+**Prerequisites:** Node.js 18+, the **Expo Go** app on a **physical phone**
+(sensors and GPS do not work in simulators/emulators).
 
 ```bash
-npm run reset-project
+# 1. Install dependencies
+npm install
+
+# 2. Start the dev server
+npx expo start
+
+# 3. Scan the QR code with Expo Go (Android) or the Camera app (iOS)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Tips:
+- **Use a real device** — the simulator has no accelerometer/gyroscope/GPS.
+- **Test speed/distance outdoors** — GPS is unreliable indoors (see limitations).
+- Grant **location** permission when prompted (optional; the app works without it).
 
-### Other setup steps
+---
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Project Structure
 
-## Learn more
+```
+src/
+  app/                # Expo Router screens (dashboard, drive, history, insights, settings)
+  sensors/            # SensorManager: subscribe → normalize → smooth → buffer
+  detection/          # DetectionEngine: events from the sensor buffer
+  scoring/            # Pure score + rating helpers
+  db/                 # SQLite connection, migrations, drive repository (queries)
+  hooks/              # Data hooks (useDrives, useDrive, useInsights, ...)
+  store/              # Zustand stores (drive session, preferences)
+  components/         # Reusable UI (ScoreRing, ScoreTrendChart, ...)
+  constants/          # thresholds, colors, spacing, typography, formatting helpers
+  context/            # Theme provider
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Data & Privacy
 
-## Join the community
+- **All data stays on-device** in SQLite — no backend, no account.
+- **Location is used transiently only** to compute live speed and accumulate
+  distance. Raw coordinates are **never persisted or transmitted**; only the most
+  recent fix is held in memory to measure the next leg and is cleared when the
+  drive ends. The app does not record or display a route.
 
-Join our community of developers creating universal apps.
+---
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Assumptions Made
+
+- **Phone is reasonably stable** during a drive (mounted or resting). Forward /
+  lateral axes assume a roughly upright phone; yaw and tilt are gravity-based and
+  so are orientation-tolerant, but extreme handling can still be misread.
+- **Thresholds are heuristic** starting points. They were tuned to behave on a
+  handheld phone; real-world accuracy needs tuning against actual driving data.
+- **Walking ≠ driving** — footstep impacts and body motion don't match a car's
+  forces, so handheld/on-foot testing produces more noise than a mounted phone.
+- **GPS speed/distance are best-effort** and degrade or read 0 indoors; they are
+  an optional enhancement, not required for scoring.
+- **Magnetometer is optional** and not used for detection.
+- **AI coaching is placeholder** content; no model is integrated yet (planned to
+  run server-side via an Expo API Route so no key ships in the app).
+- **Single user / single device**; no authentication.
+
+---
+
+## Known Limitations & Future Work
+
+- Indoor GPS can't measure short walks — distance may stay near 0 until you're
+  outdoors with a clear sky view.
+- Forward/lateral acceleration still assumes an upright phone; full car-frame
+  projection (using GPS heading) is a future refinement.
+- Stretch ideas: route replay/heatmap, real AI-generated feedback, richer
+  historical comparison.

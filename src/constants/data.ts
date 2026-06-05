@@ -58,6 +58,12 @@ export function formatDurationLabel(sec: number): string {
   return m ? `${h}h ${m}m` : `${h}h`;
 }
 
+/** "320 m" under 1 km, otherwise "1.2 km" — avoids hiding short trips as 0.0. */
+export function formatDistance(km: number): string {
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  return `${km.toFixed(1)} km`;
+}
+
 /** mm:ss / hh:mm:ss clock label from seconds. */
 export function formatClock(sec: number): string {
   const h = Math.floor(sec / 3600);
