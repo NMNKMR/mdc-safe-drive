@@ -1,12 +1,3 @@
-/**
- * UI data helpers + placeholder content.
- * ---------------------------------------
- * The dashboard/summary now read REAL drives from SQLite (see hooks/useDrives,
- * db/driveRepository). This module keeps:
- *   - pure mappers that turn a persisted `DriveRecord` into display view-models
- *     (labels, dates, badges, tiers), and
- *   - the still-dummy AI coaching copy (no model wired up yet).
- */
 import type { ThemeColors } from "@/constants/colors";
 import type { DriveRecord } from "@/db/driveRepository";
 
@@ -38,8 +29,18 @@ export function tierColor(tier: ScoreTier, colors: ThemeColors): string {
 // Display formatting
 // ---------------------------------------------------------------------------
 const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 /** "Jun 4" style short date from an epoch-ms timestamp. */
@@ -142,6 +143,11 @@ export const AI_INSIGHT: AiInsight = {
 export const SUMMARY_AI_FEEDBACK =
   "Great anticipation on urban roads today. Focus on maintaining steady " +
   "deceleration approaching intersections to reach a perfect 100 score.";
+
+/** Placeholder observation shown on the Insights screen (no model wired up). */
+export const AI_COACH_OBSERVATION =
+  "Your safety score peaks during morning commutes. Try maintaining that " +
+  "same focus during your weekend evening trips where scores slightly dip.";
 
 // ---------------------------------------------------------------------------
 // Active-drive incident feed — dummy fallback before any event is detected

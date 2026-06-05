@@ -1,11 +1,3 @@
-/**
- * Data hooks for drive history.
- * -----------------------------
- * Thin React wrappers over driveRepository. Each re-queries when the screen
- * regains focus (via expo-router's useFocusEffect), so navigating back from a
- * finished drive shows the newly-saved record without manual refresh wiring.
- * Each also returns `refresh()` for pull-to-refresh / explicit reloads.
- */
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 

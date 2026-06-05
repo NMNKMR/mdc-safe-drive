@@ -1,13 +1,3 @@
-/**
- * SlideToStart — slide-to-confirm action used to begin a drive.
- * -------------------------------------------------------------
- * A pill track with a draggable knob. The user must drag past ~80% of the
- * track to fire `onComplete`; an incomplete drag springs back. Built on the
- * modern Gesture API + Reanimated worklets so the drag stays on the UI thread.
- *
- * Pill / fully-rounded styling per Theme.md (interactive elements are pills,
- * informational cards are 16px rounded).
- */
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {

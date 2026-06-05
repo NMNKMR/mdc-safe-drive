@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -94,6 +94,21 @@ export default function Dashboard() {
               </Text>
             </ScoreRing>
           </View>
+
+          <Pressable
+            onPress={() => router.push("/insights" as Href)}
+            style={({ pressed }) => [
+              styles.insightsBtn,
+              { backgroundColor: colors.surfaceContainerHigh },
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <Ionicons name="stats-chart" size={16} color={colors.primary} />
+            <Text style={[styles.insightsBtnText, { color: colors.primary }]}>
+              VIEW INSIGHTS
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+          </Pressable>
         </View>
 
         {/* AI insight */}
@@ -146,9 +161,15 @@ export default function Dashboard() {
             Recent Drives
           </Text>
           {cards.length > 0 && (
-            <Text style={[styles.viewAll, { color: colors.primary }]}>
-              VIEW ALL
-            </Text>
+            <Pressable
+              hitSlop={8}
+              onPress={() => router.push("/history")}
+              style={({ pressed }) => pressed && { opacity: 0.6 }}
+            >
+              <Text style={[styles.viewAll, { color: colors.primary }]}>
+                VIEW ALL
+              </Text>
+            </Pressable>
           )}
         </View>
 
@@ -160,7 +181,16 @@ export default function Dashboard() {
             </Text>
           </View>
         ) : (
-          cards.map((d) => <DriveRow key={d.id} drive={d} colors={colors} />)
+          cards.map((d) => (
+            <DriveRow
+              key={d.id}
+              drive={d}
+              colors={colors}
+              onPress={() =>
+                router.push({ pathname: "/history/[id]", params: { id: d.id } })
+              }
+            />
+          ))
         )}
       </ScrollView>
 
@@ -207,6 +237,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   gaugeWrap: { alignItems: "center", justifyContent: "center" },
+  insightsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radius.pill,
+  },
+  insightsBtnText: { ...typography.labelCaps, fontWeight: "700" },
   score: { ...typography.displayScore, fontWeight: "700" },
   scoreRating: {
     ...typography.labelCaps,

@@ -1,12 +1,3 @@
-/**
- * SQLite connection + schema migration.
- * --------------------------------------
- * One shared database handle for the whole app. `getDb()` opens it lazily and
- * runs migrations exactly once (subsequent calls await the same promise).
- *
- * Migrations are versioned via SQLite's `user_version` pragma so the schema can
- * evolve without losing data: add a new `if (version < N)` block per change.
- */
 import * as SQLite from "expo-sqlite";
 
 const DB_NAME = "safedrive.db";

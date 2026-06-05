@@ -1,10 +1,3 @@
-/**
- * useSensorDebug
- * --------------
- * Day 1 helper hook. Starts the SensorManager, polls its snapshot on a fixed
- * UI cadence (decoupled from the 50 Hz sensor stream), and tears everything
- * down on unmount. Returns the latest snapshot for rendering.
- */
 import { useEffect, useState } from "react";
 
 import { sensorManager } from "./SensorManager";

@@ -23,13 +23,16 @@ const driveIcon = (
 export default function DriveRow({
   drive,
   colors,
+  onPress,
 }: {
   drive: RecentDrive;
   colors: ThemeColors;
+  onPress?: () => void;
 }) {
   const accent = tierColor(drive.tier, colors);
   return (
     <Pressable
+      onPress={onPress}
       style={({ pressed }) => [
         styles.row,
         { backgroundColor: colors.surfaceContainer },

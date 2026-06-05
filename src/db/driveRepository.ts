@@ -1,10 +1,3 @@
-/**
- * driveRepository
- * ---------------
- * All SQL for drives + events lives here. Screens/hooks call these functions
- * and never touch SQL directly. Rows are mapped from snake_case columns to
- * camelCase domain objects on the way out.
- */
 import type { DrivingEventType } from "@/constants/thresholds";
 import type { DrivingEvent } from "@/detection/DetectionEngine";
 

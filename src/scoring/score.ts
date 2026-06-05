@@ -1,10 +1,3 @@
-/**
- * Scoring
- * -------
- * Pure functions that turn a list of detected events into a score, rating,
- * and per-type breakdown. No state — given the same events, always the same
- * result (easy to unit test).
- */
 import {
   getSafetyRating,
   SCORE_MIN,

@@ -1,19 +1,15 @@
-/**
- * preferencesStore
- * ----------------
- * App preference toggles surfaced on the Settings screen. Persisted so choices
- * survive restarts. These flags are not wired to drive behaviour yet — they
- * hold the user's intent until the relevant features consume them.
- */
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 type PreferencesState = {
+  /** Theme: light, dark, or follow the system setting. */
+  themeMode: ThemeMode;
   /** Auto-start recording a trip when motion is detected. */
   autoDriveDetection: boolean;
   /** Real-time audio feedback for harsh events. */
   voiceCoaching: boolean;
+  setThemeMode: (mode: ThemeMode) => void;
   setAutoDriveDetection: (on: boolean) => void;
   setVoiceCoaching: (on: boolean) => void;
 };
@@ -21,9 +17,12 @@ type PreferencesState = {
 export const usePreferencesStore = create<PreferencesState>()(
   persist(
     (set) => ({
+      themeMode: "system",
       autoDriveDetection: true,
       voiceCoaching: false,
-      setAutoDriveDetection: (autoDriveDetection) => set({ autoDriveDetection }),
+      setThemeMode: (themeMode) => set({ themeMode }),
+      setAutoDriveDetection: (autoDriveDetection) =>
+        set({ autoDriveDetection }),
       setVoiceCoaching: (voiceCoaching) => set({ voiceCoaching }),
     }),
     {
