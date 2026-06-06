@@ -6,6 +6,19 @@ braking, sharp turns, and phone handling during a drive, then summarizes each
 trip and tracks your safety trend over time — the same ideas behind insurance
 telematics and fleet driver-safety systems.
 
+## Demo Video:
+https://drive.google.com/file/d/1YI-8NwhmvLI32ti03JypDVkWFP-EXW22/view?usp=drivesdk
+
+## Screenshots:
+<img width="250" height="520" alt="image" src="https://github.com/user-attachments/assets/f8cd5e3c-722b-46dd-aa6b-892e4c8a8d56" />
+<img width="250" height="520" alt="image" src="https://github.com/user-attachments/assets/a929615c-f69f-402b-b965-dcf49b9d87ff" />
+<img width="250" height="520" alt="image" src="https://github.com/user-attachments/assets/8dfcd561-5b99-4fec-8a42-ee6e46f67741" />
+<img width="250" height="520" alt="image" src="https://github.com/user-attachments/assets/b004c9f2-e306-4471-adb2-0aa7a240f954" />
+<img width="250" height="520" alt="image" src="https://github.com/user-attachments/assets/f41ae6ee-f4aa-459f-b500-75ccff4be082" />
+<img width="250" height="520" alt="image" src="https://github.com/user-attachments/assets/5e793148-9271-4ffb-8538-2b30e1f654c6" />
+<img width="250" height="520" alt="image" src="https://github.com/user-attachments/assets/4092af38-2ec5-45ed-9354-4089aeee5255" />
+
+
 ---
 
 ## Project Overview
